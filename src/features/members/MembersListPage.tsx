@@ -6,7 +6,6 @@ import {
   RefreshCw,
   Trash2,
   Edit2,
-  CreditCard,
   Eye,
   Phone,
   Mail,
@@ -22,7 +21,6 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { formatDate, getMembershipStatus } from '../../lib/dates';
 import { MemberRenewModal } from './MemberRenewModal';
 import { MemberEditModal } from './MemberEditModal';
-import { RecordPaymentModal } from '../payments/RecordPaymentModal';
 import type { Member } from '../../types';
 
 export const MembersListPage: React.FC = () => {
@@ -39,7 +37,6 @@ export const MembersListPage: React.FC = () => {
   // Modals state
   const [memberToRenew, setMemberToRenew] = useState<Member | null>(null);
   const [memberToEdit, setMemberToEdit] = useState<Member | null>(null);
-  const [memberToRecordPayment, setMemberToRecordPayment] = useState<Member | null>(null);
   const [memberToDelete, setMemberToDelete] = useState<Member | null>(null);
 
   // Status counts for tabs
@@ -330,7 +327,7 @@ export const MembersListPage: React.FC = () => {
 
                       {/* Plan */}
                       <td className="py-3.5 px-4">
-                        <span className="font-semibold text-[#172033]">{plan?.name || 'General Access'}</span>
+                        <span className="font-semibold text-[#172033]">{member.planName || plan?.name || 'Membership Plan'}</span>
                         <p className="text-[11px] text-[#64748B]">
                           Since {formatDate(member.startDate)}
                         </p>
@@ -380,16 +377,6 @@ export const MembersListPage: React.FC = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setMemberToRecordPayment(member)}
-                            title="Record payment"
-                            className="text-[#16A34A] hover:bg-green-50"
-                          >
-                            <CreditCard className="w-3.5 h-3.5" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
                             onClick={() => setMemberToEdit(member)}
                             title="Edit details"
                           >
@@ -429,11 +416,6 @@ export const MembersListPage: React.FC = () => {
         onClose={() => setMemberToEdit(null)}
       />
 
-      <RecordPaymentModal
-        preselectedMemberId={memberToRecordPayment?.id}
-        isOpen={!!memberToRecordPayment}
-        onClose={() => setMemberToRecordPayment(null)}
-      />
 
       <ConfirmDialog
         isOpen={!!memberToDelete}

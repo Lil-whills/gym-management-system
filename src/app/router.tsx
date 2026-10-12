@@ -6,17 +6,9 @@ import { AddMemberPage } from '../features/members/AddMemberPage';
 import { MemberDetailPage } from '../features/members/MemberDetailPage';
 import { PlansPage } from '../features/plans/PlansPage';
 import { PaymentsPage } from '../features/payments/PaymentsPage';
-import { WebsiteEditorPage } from '../features/website/WebsiteEditorPage';
 import { SettingsPage } from '../features/settings/SettingsPage';
-import { GymPublicPage } from '../features/public-website/GymPublicPage';
 
 export const router = createBrowserRouter([
-  // Standalone Public Gym Website (Clean visitor view without dashboard sidebar)
-  {
-    path: '/gym-preview',
-    element: <GymPublicPage />,
-  },
-
   // Main Authenticated / Demo SaaS Dashboard Layout
   {
     path: '/',
@@ -47,12 +39,12 @@ export const router = createBrowserRouter([
         element: <PlansPage />,
       },
       {
-        path: 'payments',
-        element: <PaymentsPage />,
+        path: 'subscription',
+        element: <PlansPage />,
       },
       {
-        path: 'website',
-        element: <WebsiteEditorPage />,
+        path: 'payments',
+        element: <PaymentsPage />,
       },
       {
         path: 'settings',

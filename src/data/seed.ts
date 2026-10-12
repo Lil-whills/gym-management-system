@@ -1,5 +1,5 @@
 import { addDays, subDays, format } from 'date-fns';
-import type { Member, MembershipPlan, Payment, GymProfile, PublicWebsiteSettings } from '../types';
+import type { Member, MembershipPlan, Payment, GymProfile } from '../types';
 
 export function generateSeedData() {
   const today = new Date();
@@ -7,9 +7,24 @@ export function generateSeedData() {
 
   const plans: MembershipPlan[] = [
     {
+      id: 'plan_weekly',
+      name: '1 Week Pass',
+      price: 60,
+      durationValue: 1,
+      durationUnit: 'weeks',
+      durationMonths: 1,
+      description: 'Short-term 7-day trial or visitor pass for quick workout routines.',
+      features: ['Full gym floor access', 'Standard locker usage', 'Filtered water refill'],
+      isActive: true,
+      createdAt: format(subDays(today, 120), 'yyyy-MM-dd'),
+      updatedAt: format(subDays(today, 120), 'yyyy-MM-dd'),
+    },
+    {
       id: 'plan_monthly',
       name: 'Monthly Flex Plan',
       price: 180,
+      durationValue: 1,
+      durationUnit: 'months',
       durationMonths: 1,
       description: 'Standard monthly access with full gym floor and standard locker usage.',
       features: [
@@ -26,6 +41,8 @@ export function generateSeedData() {
       id: 'plan_quarterly',
       name: 'Quarterly Performance',
       price: 450,
+      durationValue: 3,
+      durationUnit: 'months',
       durationMonths: 3,
       description: 'Popular 3-month commitment for sustained progress with added perks.',
       features: [
@@ -33,7 +50,40 @@ export function generateSeedData() {
         'Sauna & steam room access',
         '1 complimentary trainer check-in per month',
         '10% discount on in-house protein shake bar',
-        'Free guest pass every 45 days',
+      ],
+      isActive: true,
+      createdAt: format(subDays(today, 120), 'yyyy-MM-dd'),
+      updatedAt: format(subDays(today, 120), 'yyyy-MM-dd'),
+    },
+    {
+      id: 'plan_semester',
+      name: '1 Semester (4 Months)',
+      price: 550,
+      durationValue: 4,
+      durationUnit: 'months',
+      durationMonths: 4,
+      description: 'Specially designed for university students, interns, and academic semesters.',
+      features: [
+        'Full facility & cardio area access',
+        'Free locker usage',
+        'Group fitness class access',
+      ],
+      isActive: true,
+      createdAt: format(subDays(today, 120), 'yyyy-MM-dd'),
+      updatedAt: format(subDays(today, 120), 'yyyy-MM-dd'),
+    },
+    {
+      id: 'plan_biannual',
+      name: '6 Months Subscription',
+      price: 800,
+      durationValue: 6,
+      durationUnit: 'months',
+      durationMonths: 6,
+      description: 'Half-year dedicated fitness journey with personal locker privileges.',
+      features: [
+        'Full 24/7 gym & fitness studio access',
+        'Sauna & steam room access',
+        'Quarterly body composition scan',
       ],
       isActive: true,
       createdAt: format(subDays(today, 120), 'yyyy-MM-dd'),
@@ -43,15 +93,15 @@ export function generateSeedData() {
       id: 'plan_annual',
       name: 'Annual Champion Pass',
       price: 1600,
+      durationValue: 1,
+      durationUnit: 'years',
       durationMonths: 12,
       description: 'Maximum value membership with VIP access and complimentary perks.',
       features: [
-        'Unlimited 24/7 access to all facilities',
+        'Unlimited access to all facilities',
         'Dedicated VIP locker & laundry service',
         'Monthly InBody body composition scans',
         '4 complimentary 1-on-1 personal training sessions',
-        '4 free guest passes per year',
-        'Priority booking for group spin and HIIT classes',
       ],
       isActive: true,
       createdAt: format(subDays(today, 120), 'yyyy-MM-dd'),
@@ -419,53 +469,29 @@ export function generateSeedData() {
     logoInitials: 'IP',
   };
 
-  const websiteSettings: PublicWebsiteSettings = {
-    gymName: 'IronPulse Fitness Club',
-    headline: 'Build Your Strength, Transform Your Health',
-    subheadline: 'Modern fitness equipment, elite personal training, and an energizing community right in the heart of Accra.',
-    aboutText: 'At IronPulse, we believe fitness is the foundation of a high-performance life. Whether your goal is raw strength, cardiovascular health, or weight management, our world-class equipment and passionate trainers give you everything you need to succeed.',
-    location: 'Plot 14, Ring Road Central, Osu, Accra, Ghana',
-    contactPhone: '+233 24 456 7890',
-    contactEmail: 'info@ironpulsefitness.com',
-    openingHoursText: 'Mon–Fri: 5:30 AM – 9:30 PM | Sat: 6:00 AM – 8:00 PM | Sun: 8:00 AM – 4:00 PM',
-    accentColor: '#3B82F6',
-    heroTag: 'Accra’s #1 Ranked Fitness Center',
-    features: [
-      {
-        id: 'feat_1',
-        title: 'Olympic & Strength Zone',
-        description: 'Calibrated plates, power racks, Eleiko barbells, and dumbbell racks up to 50kg.',
-        iconName: 'Dumbbell',
-      },
-      {
-        id: 'feat_2',
-        title: 'Dedicated Cardio Suite',
-        description: 'Treadmills, rowers, assault bikes, and stairmasters with personalized metrics.',
-        iconName: 'Zap',
-      },
-      {
-        id: 'feat_3',
-        title: 'Certified Personal Trainers',
-        description: 'Expert 1-on-1 coaching, form correction, and tailored nutrition roadmaps.',
-        iconName: 'Users',
-      },
-      {
-        id: 'feat_4',
-        title: 'Recovery & Luxury Showers',
-        description: 'Nordic steam sauna, sanitized lockers, and modern rain showers.',
-        iconName: 'ShieldCheck',
-      },
-    ],
-    callToActionText: 'Claim Your Free Gym Trial Pass',
-    whatsappNumber: '+233244567890',
-    instagramHandle: '@ironpulse_accra',
+  const planNameMap: Record<string, string> = {
+    plan_annual: 'Annual Champion Pass',
+    plan_quarterly: 'Quarterly Performance',
+    plan_monthly: 'Monthly Flex Plan',
   };
+
+  const enrichedMembers: Member[] = members.map((m) => ({
+    ...m,
+    planName: planNameMap[m.planId || ''] || 'Membership Subscription',
+  }));
+
+  const enrichedPayments: Payment[] = payments.map((p) => {
+    const member = members.find((m) => m.id === p.memberId);
+    return {
+      ...p,
+      expiryDate: member?.expiryDate || format(addDays(new Date(p.paymentDate), 30), 'yyyy-MM-dd'),
+    };
+  });
 
   return {
     plans,
-    members,
-    payments,
+    members: enrichedMembers,
+    payments: enrichedPayments,
     gymProfile,
-    websiteSettings,
   };
 }

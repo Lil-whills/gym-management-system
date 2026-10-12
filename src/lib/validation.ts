@@ -24,7 +24,8 @@ export function validateMemberForm(data: {
   fullName: string;
   email?: string;
   phone: string;
-  planId: string;
+  planName?: string;
+  planId?: string;
   startDate: string;
   expiryDate: string;
 }): ValidationResult {
@@ -42,8 +43,8 @@ export function validateMemberForm(data: {
     errors.phone = 'A valid phone number is required (e.g., 024 456 7890).';
   }
 
-  if (!data.planId) {
-    errors.planId = 'Please select a membership plan.';
+  if (!data.planName && !data.planId) {
+    errors.planName = 'Please enter or select a membership plan / package.';
   }
 
   if (!data.startDate) {

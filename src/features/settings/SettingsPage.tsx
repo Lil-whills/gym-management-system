@@ -97,7 +97,7 @@ export const SettingsPage: React.FC = () => {
         <Card>
           <CardHeader
             title="1. Gym Identity & Contact Details"
-            subtitle="Core business information synchronized across your dashboard and public landing page"
+            subtitle="Core facility details and primary communication channels for your gym workspace"
           />
           <CardBody className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

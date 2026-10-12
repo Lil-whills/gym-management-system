@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
-import { useLocation, Link, useNavigate } from 'react-router-dom';
-import { Menu, Plus, UserPlus, CreditCard, ExternalLink, Dumbbell } from 'lucide-react';
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Menu, UserPlus, Dumbbell } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useData } from '../../context/DataContext';
 
 interface TopbarProps {
   onOpenSidebar: () => void;
-  onOpenRecordPayment?: () => void;
 }
 
-export const Topbar: React.FC<TopbarProps> = ({ onOpenSidebar, onOpenRecordPayment }) => {
+export const Topbar: React.FC<TopbarProps> = ({ onOpenSidebar }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { gymProfile } = useData();
-  const [showQuickMenu, setShowQuickMenu] = useState(false);
 
   // Derive title from route
   const getPageInfo = () => {
@@ -42,22 +40,16 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenSidebar, onOpenRecordPayme
         subtitle: 'Manage client memberships, track active plans, and handle renewals',
       };
     }
-    if (path.startsWith('/plans')) {
+    if (path.startsWith('/plans') || path.startsWith('/subscription')) {
       return {
-        title: 'Membership Plans & Pricing',
-        subtitle: 'Configure subscription packages, duration tiers, and cedi pricing',
+        title: 'Subscription Plans',
+        subtitle: 'Facility software tiers: Standard (GH₵ 100), Pro (GH₵ 150), and Premium (GH₵ 200) per month',
       };
     }
     if (path.startsWith('/payments')) {
       return {
         title: 'Payment Records & Revenue',
-        subtitle: 'Track manual transactions, cash, Mobile Money, and bank transfers',
-      };
-    }
-    if (path.startsWith('/website')) {
-      return {
-        title: 'Public Gym Website Builder',
-        subtitle: 'Brand your landing page, showcase facilities, and capture member inquiries',
+        subtitle: 'Track dues collections, inspect transactions, and print receipts',
       };
     }
     if (path.startsWith('/settings')) {
@@ -97,67 +89,18 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenSidebar, onOpenRecordPayme
         </div>
       </div>
 
-      {/* Right: Quick actions & Profile */}
+      {/* Right: Register Member action & Profile */}
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-        {/* Quick Action Button & Popover */}
-        <div className="relative">
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus className="w-4 h-4" />}
-            onClick={() => setShowQuickMenu(!showQuickMenu)}
-            className="shadow-xs"
-          >
-            <span className="hidden xs:inline">Quick Action</span>
-            <span className="xs:hidden">Action</span>
-          </Button>
-
-          {showQuickMenu && (
-            <>
-              <div
-                className="fixed inset-0 z-20"
-                onClick={() => setShowQuickMenu(false)}
-              />
-              <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-[#E7ECF3] p-1.5 z-30 animate-in fade-in zoom-in-95 duration-150">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    navigate('/members/new');
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[#172033] hover:bg-blue-50 hover:text-[#3B82F6] rounded-lg transition-colors text-left cursor-pointer"
-                >
-                  <UserPlus className="w-4 h-4 text-[#3B82F6]" />
-                  <span>Register Member</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowQuickMenu(false);
-                    if (onOpenRecordPayment) {
-                      onOpenRecordPayment();
-                    } else {
-                      navigate('/payments?action=record');
-                    }
-                  }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[#172033] hover:bg-blue-50 hover:text-[#3B82F6] rounded-lg transition-colors text-left cursor-pointer"
-                >
-                  <CreditCard className="w-4 h-4 text-[#16A34A]" />
-                  <span>Record Payment</span>
-                </button>
-                <Link
-                  to="/gym-preview"
-                  target="_blank"
-                  onClick={() => setShowQuickMenu(false)}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[#172033] hover:bg-blue-50 hover:text-[#3B82F6] rounded-lg transition-colors text-left"
-                >
-                  <ExternalLink className="w-4 h-4 text-purple-500" />
-                  <span>View Public Page</span>
-                </Link>
-              </div>
-            </>
-          )}
-        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          leftIcon={<UserPlus className="w-4 h-4" />}
+          onClick={() => navigate('/members/new')}
+          className="shadow-xs"
+        >
+          <span className="hidden xs:inline">Register Member</span>
+          <span className="xs:hidden">Register</span>
+        </Button>
 
         {/* Gym Avatar / Manager badge */}
         <div className="hidden sm:flex items-center pl-3 border-l border-[#E7ECF3] gap-2.5">

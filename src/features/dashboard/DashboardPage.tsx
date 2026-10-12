@@ -7,11 +7,11 @@ import {
   CircleDollarSign,
   UserPlus,
   CreditCard,
-  Plus,
   ArrowRight,
   RefreshCw,
   Eye,
   Receipt,
+  Crown,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { StatsCard } from '../../components/ui/StatsCard';
@@ -22,9 +22,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { formatCurrency } from '../../lib/currency';
 import { formatDate, getMembershipStatus } from '../../lib/dates';
 import { MemberRenewModal } from '../members/MemberRenewModal';
-import { RecordPaymentModal } from '../payments/RecordPaymentModal';
 import { PaymentReceiptModal } from '../payments/PaymentReceiptModal';
-import { PlanFormModal } from '../plans/PlanFormModal';
 import type { Member, Payment } from '../../types';
 import {
   ResponsiveContainer,
@@ -43,8 +41,6 @@ export const DashboardPage: React.FC = () => {
   // State for modals triggered from dashboard
   const [memberToRenew, setMemberToRenew] = useState<Member | null>(null);
   const [selectedReceipt, setSelectedReceipt] = useState<Payment | null>(null);
-  const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
-  const [isCreatePlanOpen, setIsCreatePlanOpen] = useState(false);
 
   // Filter members needing attention (Expiring soon or Expired)
   const attentionMembers = useMemo(() => {
@@ -66,9 +62,10 @@ export const DashboardPage: React.FC = () => {
       .slice(0, 5);
   }, [payments]);
 
-  // Revenue chart data: Group payments by plan
+  // Revenue chart data: Group payments by registered subscription plan
   const chartData = useMemo(() => {
     const planRevenueMap: Record<string, number> = {};
+    const validPlanNames = new Set(plans.map((p) => p.name));
     plans.forEach((p) => {
       planRevenueMap[p.name] = 0;
     });
@@ -76,8 +73,10 @@ export const DashboardPage: React.FC = () => {
     payments
       .filter((p) => p.status === 'Completed')
       .forEach((p) => {
-        const planName = p.planName || 'Other';
-        planRevenueMap[planName] = (planRevenueMap[planName] || 0) + p.amount;
+        // Only include payments matching registered gym subscription plans; manual entries are excluded to keep chart clean
+        if (p.planName && validPlanNames.has(p.planName)) {
+          planRevenueMap[p.planName] = (planRevenueMap[p.planName] || 0) + p.amount;
+        }
       });
 
     return Object.entries(planRevenueMap).map(([name, revenue]) => ({
@@ -99,7 +98,7 @@ export const DashboardPage: React.FC = () => {
             Welcome to {gymProfile.name}
           </h2>
           <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
-            Monitor active members, track expiring packages, issue payment receipts, and manage your gym’s public page.
+            Monitor active members, track expiring packages, issue payment receipts, and streamline your gym’s day-to-day operations.
           </p>
         </div>
 
@@ -117,9 +116,9 @@ export const DashboardPage: React.FC = () => {
             size="md"
             className="bg-white/10 hover:bg-white/20 text-white border-white/20 hover:border-white/30"
             leftIcon={<CreditCard className="w-4 h-4" />}
-            onClick={() => setIsRecordPaymentOpen(true)}
+            onClick={() => navigate('/payments')}
           >
-            Record Payment
+            Payments & Receipts
           </Button>
         </div>
 
@@ -334,7 +333,7 @@ export const DashboardPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setIsRecordPaymentOpen(true)}
+                onClick={() => navigate('/payments')}
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-blue-50/80 border border-[#E7ECF3] hover:border-blue-200 transition-all text-left cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
@@ -343,9 +342,9 @@ export const DashboardPage: React.FC = () => {
                   </div>
                   <div>
                     <span className="block text-xs font-bold text-[#172033] group-hover:text-[#3B82F6]">
-                      Record Payment
+                      Payments & Receipts
                     </span>
-                    <span className="text-[11px] text-[#64748B]">Cash, MoMo, or Bank receipt</span>
+                    <span className="text-[11px] text-[#64748B]">View transactions and print receipts</span>
                   </div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#3B82F6] transition-colors" />
@@ -353,18 +352,18 @@ export const DashboardPage: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => setIsCreatePlanOpen(true)}
+                onClick={() => navigate('/plans')}
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-slate-50 hover:bg-blue-50/80 border border-[#E7ECF3] hover:border-blue-200 transition-all text-left cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
-                    <Plus className="w-4 h-4" />
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+                    <Crown className="w-4 h-4" />
                   </div>
                   <div>
                     <span className="block text-xs font-bold text-[#172033] group-hover:text-[#3B82F6]">
-                      Create Membership Plan
+                      Subscription Plans
                     </span>
-                    <span className="text-[11px] text-[#64748B]">Add new duration or pricing package</span>
+                    <span className="text-[11px] text-[#64748B]">Standard (100), Pro (150), Premium (200)</span>
                   </div>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#3B82F6] transition-colors" />
@@ -456,15 +455,7 @@ export const DashboardPage: React.FC = () => {
         onClose={() => setMemberToRenew(null)}
       />
 
-      <RecordPaymentModal
-        isOpen={isRecordPaymentOpen}
-        onClose={() => setIsRecordPaymentOpen(false)}
-      />
 
-      <PlanFormModal
-        isOpen={isCreatePlanOpen}
-        onClose={() => setIsCreatePlanOpen(false)}
-      />
 
       <PaymentReceiptModal
         payment={selectedReceipt}

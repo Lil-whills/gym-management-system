@@ -3,13 +3,10 @@ import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users,
-  CreditCard,
   Receipt,
-  Globe,
   Settings,
   Dumbbell,
-  ExternalLink,
-  Sparkles,
+  Crown,
   X,
 } from 'lucide-react';
 import { APP_CONFIG } from '../../constants/app';
@@ -38,9 +35,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       badgeType: 'warning',
     },
     {
-      label: 'Membership Plans',
+      label: 'Subscription Plans',
       path: '/plans',
-      icon: CreditCard,
+      icon: Crown,
       badge: undefined,
     },
     {
@@ -48,13 +45,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       path: '/payments',
       icon: Receipt,
       badge: undefined,
-    },
-    {
-      label: 'Public Website',
-      path: '/website',
-      icon: Globe,
-      badge: 'Live',
-      badgeType: 'success',
     },
     {
       label: 'Settings',
@@ -168,26 +158,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           })}
         </nav>
 
-        {/* Public Website Preview Link */}
+        {/* Bottom Prototype Demo Badge */}
         <div className="p-3 border-t border-slate-800">
-          <Link
-            to="/gym-preview"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-between p-3 rounded-xl bg-slate-800/40 hover:bg-slate-800 text-xs font-medium text-slate-300 hover:text-white border border-slate-700/50 transition-colors"
-          >
-            <div className="flex items-center gap-2.5">
-              <Sparkles className="w-4 h-4 text-[#3B82F6]" />
-              <div>
-                <span className="block font-semibold text-slate-200">Public Gym Page</span>
-                <span className="text-[10px] text-slate-400">Open visitor view</span>
-              </div>
-            </div>
-            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-          </Link>
-
-          {/* Prototype Demo Badge */}
-          <div className="mt-3 px-3 py-2 rounded-lg bg-slate-900/80 border border-slate-800 text-center">
+          <div className="px-3 py-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-center">
             <span className="inline-flex items-center gap-1.5 text-[11px] text-slate-400">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               {APP_CONFIG.demoBadgeText}

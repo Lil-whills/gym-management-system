@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useData } from '../../context/DataContext';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -10,10 +10,8 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { formatCurrency } from '../../lib/currency';
 import { formatDate, isCurrentMonth } from '../../lib/dates';
-import { RecordPaymentModal } from './RecordPaymentModal';
 import { PaymentReceiptModal } from './PaymentReceiptModal';
 import {
-  Plus,
   Search,
   Eye,
   Trash2,
@@ -25,13 +23,9 @@ import {
 import type { Payment } from '../../types';
 
 export const PaymentsPage: React.FC = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { payments, deletePayment, stats } = useData();
 
-  // URL action param support (e.g. /payments?action=record)
-  const shouldOpenRecord = searchParams.get('action') === 'record';
-
-  const [isRecordOpen, setIsRecordOpen] = useState(shouldOpenRecord);
   const [selectedReceipt, setSelectedReceipt] = useState<Payment | null>(null);
   const [paymentToDelete, setPaymentToDelete] = useState<Payment | null>(null);
 
@@ -100,16 +94,14 @@ export const PaymentsPage: React.FC = () => {
             Payments & Financial Ledger
           </h2>
           <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
-            Track manual dues collections, issue receipts, and inspect transactions
+            Dues collections, official receipts, and transaction history
           </p>
         </div>
-        <Button
-          variant="primary"
-          leftIcon={<Plus className="w-4 h-4" />}
-          onClick={() => setIsRecordOpen(true)}
-        >
-          Record New Payment
-        </Button>
+        <div className="flex items-center gap-2">
+          <Badge variant="blue" size="md">
+            Auto-Recorded on Enrollment & Renewal
+          </Badge>
+        </div>
       </div>
 
       {/* Revenue Summary Cards */}
@@ -202,14 +194,14 @@ export const PaymentsPage: React.FC = () => {
             <EmptyState
               title="No payments found"
               description="No transaction records match your search query or filters."
-              actionLabel={searchQuery || methodFilter !== 'all' ? 'Clear Filters' : 'Record Payment'}
+              actionLabel={searchQuery || methodFilter !== 'all' || timeFilter !== 'all' ? 'Clear Filters' : 'Register Member'}
               onAction={() => {
-                if (searchQuery || methodFilter !== 'all') {
+                if (searchQuery || methodFilter !== 'all' || timeFilter !== 'all') {
                   setSearchQuery('');
                   setMethodFilter('all');
                   setTimeFilter('all');
                 } else {
-                  setIsRecordOpen(true);
+                  navigate('/members/new');
                 }
               }}
             />
@@ -238,8 +230,13 @@ export const PaymentsPage: React.FC = () => {
                     <td className="py-3.5 px-4 font-semibold text-[#172033]">
                       {payment.memberName}
                     </td>
-                    <td className="py-3.5 px-4 text-[#64748B] font-medium">
-                      {payment.planName}
+                    <td className="py-3.5 px-4">
+                      <span className="font-semibold text-[#172033] block">{payment.planName}</span>
+                      {payment.expiryDate && (
+                        <span className="text-[11px] text-[#3B82F6] font-medium block">
+                          Valid until {formatDate(payment.expiryDate)}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3.5 px-4 font-bold text-[#172033]">
                       {formatCurrency(payment.amount, true)}
@@ -283,17 +280,6 @@ export const PaymentsPage: React.FC = () => {
         )}
       </Card>
 
-      {/* Modals */}
-      <RecordPaymentModal
-        isOpen={isRecordOpen}
-        onClose={() => {
-          setIsRecordOpen(false);
-          if (shouldOpenRecord) {
-            searchParams.delete('action');
-            setSearchParams(searchParams);
-          }
-        }}
-      />
 
       <PaymentReceiptModal
         payment={selectedReceipt}

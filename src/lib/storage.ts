@@ -1,6 +1,6 @@
 import { APP_CONFIG } from '../constants/app';
 import { generateSeedData } from '../data/seed';
-import type { Member, MembershipPlan, Payment, GymProfile, PublicWebsiteSettings } from '../types';
+import type { Member, MembershipPlan, Payment, GymProfile } from '../types';
 
 export function getStoredItem<T>(key: string, fallback: T): T {
   try {
@@ -34,7 +34,6 @@ export interface StoredAppData {
   plans: MembershipPlan[];
   payments: Payment[];
   gymProfile: GymProfile;
-  websiteSettings: PublicWebsiteSettings;
 }
 
 /**
@@ -50,7 +49,6 @@ export function initializeStorage(): StoredAppData {
     setStoredItem(APP_CONFIG.storageKeys.members, seed.members);
     setStoredItem(APP_CONFIG.storageKeys.payments, seed.payments);
     setStoredItem(APP_CONFIG.storageKeys.gymProfile, seed.gymProfile);
-    setStoredItem(APP_CONFIG.storageKeys.websiteSettings, seed.websiteSettings);
     localStorage.setItem(APP_CONFIG.storageKeys.hasInitialized, 'true');
 
     return seed;
@@ -60,14 +58,12 @@ export function initializeStorage(): StoredAppData {
   const members = getStoredItem<Member[]>(APP_CONFIG.storageKeys.members, seed.members);
   const payments = getStoredItem<Payment[]>(APP_CONFIG.storageKeys.payments, seed.payments);
   const gymProfile = getStoredItem<GymProfile>(APP_CONFIG.storageKeys.gymProfile, seed.gymProfile);
-  const websiteSettings = getStoredItem<PublicWebsiteSettings>(APP_CONFIG.storageKeys.websiteSettings, seed.websiteSettings);
 
   return {
     plans,
     members,
     payments,
     gymProfile,
-    websiteSettings,
   };
 }
 
@@ -80,7 +76,6 @@ export function resetDemoStorage(): StoredAppData {
   setStoredItem(APP_CONFIG.storageKeys.members, seed.members);
   setStoredItem(APP_CONFIG.storageKeys.payments, seed.payments);
   setStoredItem(APP_CONFIG.storageKeys.gymProfile, seed.gymProfile);
-  setStoredItem(APP_CONFIG.storageKeys.websiteSettings, seed.websiteSettings);
   localStorage.setItem(APP_CONFIG.storageKeys.hasInitialized, 'true');
   return seed;
 }
@@ -97,7 +92,6 @@ export function exportDataAsJSON(): string {
     plans: getStoredItem(APP_CONFIG.storageKeys.plans, []),
     payments: getStoredItem(APP_CONFIG.storageKeys.payments, []),
     gymProfile: getStoredItem(APP_CONFIG.storageKeys.gymProfile, {}),
-    websiteSettings: getStoredItem(APP_CONFIG.storageKeys.websiteSettings, {}),
   };
   return JSON.stringify(data, null, 2);
 }

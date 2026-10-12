@@ -4,12 +4,13 @@ import {
   differenceInCalendarDays,
   addMonths,
   addDays,
+  addYears,
   subDays,
   isValid,
   startOfDay,
   isSameMonth,
 } from 'date-fns';
-import type { MembershipStatusInfo } from '../types';
+import type { MembershipStatusInfo, PlanDurationUnit } from '../types';
 
 /**
  * Safely parse a date-only string (YYYY-MM-DD) into a local Date object at midnight
@@ -115,6 +116,52 @@ export function calculateExpiryDate(startDateString: string, durationMonths: num
   const futureDate = addMonths(startDate, durationMonths || 1);
   const expiryDate = subDays(futureDate, 1);
   return formatToInputDate(expiryDate);
+}
+
+/**
+ * Calculates exact expiry date given a duration value and unit (days, weeks, months, years)
+ */
+export function calculatePlanExpiry(
+  startDateString: string,
+  durationValue: number = 1,
+  durationUnit: PlanDurationUnit = 'months'
+): string {
+  const startDate = parseLocalDate(startDateString);
+  let futureDate: Date;
+
+  switch (durationUnit) {
+    case 'days':
+      futureDate = addDays(startDate, durationValue);
+      break;
+    case 'weeks':
+      futureDate = addDays(startDate, durationValue * 7);
+      break;
+    case 'months':
+      futureDate = addMonths(startDate, durationValue);
+      break;
+    case 'years':
+      futureDate = addYears(startDate, durationValue);
+      break;
+    default:
+      futureDate = addMonths(startDate, durationValue || 1);
+  }
+
+  return formatToInputDate(futureDate);
+}
+
+/**
+ * Human-readable format for plan duration
+ */
+export function formatPlanDuration(value: number = 1, unit: PlanDurationUnit = 'months'): string {
+  if (unit === 'days') return `${value} ${value === 1 ? 'Day' : 'Days'}`;
+  if (unit === 'weeks') return `${value} ${value === 1 ? 'Week' : 'Weeks'}`;
+  if (unit === 'months') {
+    if (value === 4) return '4 Months (1 Semester)';
+    if (value === 6) return '6 Months';
+    return `${value} ${value === 1 ? 'Month' : 'Months'}`;
+  }
+  if (unit === 'years') return `${value} ${value === 1 ? 'Year' : 'Years'}`;
+  return `${value} ${unit}`;
 }
 
 /**

@@ -10,13 +10,11 @@ import { formatDate, getMembershipStatus } from '../../lib/dates';
 import { formatCurrency } from '../../lib/currency';
 import { MemberRenewModal } from './MemberRenewModal';
 import { MemberEditModal } from './MemberEditModal';
-import { RecordPaymentModal } from '../payments/RecordPaymentModal';
 import { PaymentReceiptModal } from '../payments/PaymentReceiptModal';
 import {
   ArrowLeft,
   Phone,
   Mail,
-  CreditCard,
   RefreshCw,
   Edit2,
   Trash2,
@@ -36,7 +34,6 @@ export const MemberDetailPage: React.FC = () => {
   // Modals state
   const [isRenewOpen, setIsRenewOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState<Payment | null>(null);
 
@@ -121,18 +118,10 @@ export const MemberDetailPage: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
-              leftIcon={<CreditCard className="w-4 h-4" />}
-              onClick={() => setIsRecordPaymentOpen(true)}
-            >
-              Record Payment
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
               leftIcon={<Edit2 className="w-4 h-4" />}
               onClick={() => setIsEditOpen(true)}
             >
-              Edit
+              Edit Details
             </Button>
             <Button
               variant="ghost"
@@ -163,9 +152,9 @@ export const MemberDetailPage: React.FC = () => {
             />
             <CardBody className="space-y-4">
               <div>
-                <span className="text-xs text-[#64748B] block">Current Plan:</span>
-                <p className="text-base font-bold text-[#172033]">{plan?.name || 'Standard Plan'}</p>
-                <p className="text-xs text-[#64748B] mt-0.5">{plan?.description}</p>
+                <span className="text-xs text-[#64748B] block">Current Membership Plan:</span>
+                <p className="text-base font-bold text-[#172033]">{member.planName || plan?.name || 'Membership Subscription'}</p>
+                <p className="text-xs text-[#64748B] mt-0.5">{plan?.description || 'Custom facility membership arrangement'}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[#E7ECF3] text-xs">
@@ -258,12 +247,12 @@ export const MemberDetailPage: React.FC = () => {
               subtitle={`Total lifetime contributions: ${formatCurrency(totalPaid, true)}`}
               action={
                 <Button
-                  variant="primary"
+                  variant="outline"
                   size="sm"
-                  leftIcon={<CreditCard className="w-4 h-4" />}
-                  onClick={() => setIsRecordPaymentOpen(true)}
+                  leftIcon={<RefreshCw className="w-4 h-4" />}
+                  onClick={() => setIsRenewOpen(true)}
                 >
-                  Record Payment
+                  Renew Membership
                 </Button>
               }
             />
@@ -273,9 +262,9 @@ export const MemberDetailPage: React.FC = () => {
                   <EmptyState
                     icon={<Receipt className="w-6 h-6 text-[#64748B]" />}
                     title="No payments recorded yet"
-                    description="Record the first membership dues or renewal payment for this client."
-                    actionLabel="Record Payment"
-                    onAction={() => setIsRecordPaymentOpen(true)}
+                    description="Payments are automatically recorded whenever this member registers or renews their plan."
+                    actionLabel="Renew Membership"
+                    onAction={() => setIsRenewOpen(true)}
                   />
                 </div>
               ) : (
@@ -340,11 +329,6 @@ export const MemberDetailPage: React.FC = () => {
         onClose={() => setIsEditOpen(false)}
       />
 
-      <RecordPaymentModal
-        preselectedMemberId={member.id}
-        isOpen={isRecordPaymentOpen}
-        onClose={() => setIsRecordPaymentOpen(false)}
-      />
 
       <PaymentReceiptModal
         payment={selectedReceipt}

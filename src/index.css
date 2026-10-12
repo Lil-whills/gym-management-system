@@ -79,3 +79,61 @@
 .transition-standard {
   transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Print Styles - Ensure receipts print cleanly on exactly 1 page */
+@media print {
+  @page {
+    size: portrait;
+    margin: 10mm;
+  }
+
+  html,
+  body {
+    background: #FFFFFF !important;
+    color: #0F172A !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide navigation, buttons, app shell, and background pages */
+  header,
+  aside,
+  nav,
+  button,
+  .no-print,
+  .no-print * {
+    display: none !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only the receipt container */
+  #printable-receipt,
+  #printable-receipt * {
+    visibility: visible;
+  }
+
+  #printable-receipt {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    max-width: 460px !important;
+    margin: 0 auto !important;
+    padding: 16px !important;
+    border: 1px dashed #CBD5E1 !important;
+    border-radius: 8px !important;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}

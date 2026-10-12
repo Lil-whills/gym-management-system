@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
 import { useData } from '../../context/DataContext';
@@ -19,12 +18,12 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { plans, updateMember } = useData();
+  const { updateMember } = useData();
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [planId, setPlanId] = useState('');
+  const [planName, setPlanName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [notes, setNotes] = useState('');
@@ -37,7 +36,7 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
       setFullName(member.fullName || '');
       setEmail(member.email || '');
       setPhone(member.phone || '');
-      setPlanId(member.planId || '');
+      setPlanName(member.planName || 'Membership Plan');
       setStartDate(member.startDate || '');
       setExpiryDate(member.expiryDate || '');
       setNotes(member.notes || '');
@@ -55,7 +54,7 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
       fullName,
       email,
       phone,
-      planId,
+      planName,
       startDate,
       expiryDate,
     });
@@ -71,7 +70,7 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
       fullName: fullName.trim(),
       email: email.trim(),
       phone: phone.trim(),
-      planId,
+      planName: planName.trim(),
       startDate,
       expiryDate,
       notes: notes.trim() || undefined,
@@ -116,19 +115,14 @@ export const MemberEditModal: React.FC<MemberEditModalProps> = ({
             onChange={(e) => setEmail(e.target.value)}
             error={errors.email}
           />
-          <Select
-            label="Membership Plan"
+          <Input
+            label="Membership Plan / Package"
             required
-            value={planId}
-            onChange={(e) => setPlanId(e.target.value)}
-            error={errors.planId}
-          >
-            {plans.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
+            value={planName}
+            onChange={(e) => setPlanName(e.target.value)}
+            placeholder="e.g. 6 Months Subscription, 1 Week Plan..."
+            error={errors.planName}
+          />
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

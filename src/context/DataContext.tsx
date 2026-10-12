@@ -4,13 +4,16 @@ import type {
   MembershipPlan,
   Payment,
   GymProfile,
-  PublicWebsiteSettings,
   DashboardStats,
   PaymentMethod,
+  SaaSSubscriptionPlan,
+  GymSaaSSubscription,
+  SaaSSubscriptionTier,
 } from '../types';
 import { APP_CONFIG } from '../constants/app';
-import { initializeStorage, setStoredItem, resetDemoStorage } from '../lib/storage';
+import { initializeStorage, setStoredItem, resetDemoStorage, getStoredItem } from '../lib/storage';
 import { getMembershipStatus, isCurrentMonth, formatToInputDate } from '../lib/dates';
+import { SAAS_SUBSCRIPTION_PLANS } from '../data/subscriptionPlans';
 import { useToast } from './ToastContext';
 
 interface DataContextType {
@@ -18,20 +21,24 @@ interface DataContextType {
   plans: MembershipPlan[];
   payments: Payment[];
   gymProfile: GymProfile;
-  websiteSettings: PublicWebsiteSettings;
   stats: DashboardStats;
   isLoaded: boolean;
 
+  // SaaS Subscription Plan (Standard, Pro, Premium)
+  gymSubscription: GymSaaSSubscription;
+  subscriptionPlans: SaaSSubscriptionPlan[];
+  updateGymSubscription: (tier: SaaSSubscriptionTier) => void;
+
   // Member actions
   addMember: (
-    memberData: Omit<Member, 'id' | 'createdAt' | 'updatedAt' | 'joinedDate'>,
+    memberData: Omit<Member, 'id' | 'createdAt' | 'updatedAt' | 'joinedDate'> & { planName?: string },
     initialPayment?: { amount: number; paymentMethod: PaymentMethod; notes?: string }
   ) => Member;
   updateMember: (id: string, updates: Partial<Member>) => void;
   deleteMember: (id: string) => void;
   renewMember: (
     memberId: string,
-    planId: string,
+    planNameOrId: string,
     startDate: string,
     expiryDate: string,
     paymentDetails?: { amount: number; paymentMethod: PaymentMethod; notes?: string }
@@ -54,7 +61,6 @@ interface DataContextType {
 
   // Settings & Profile actions
   updateGymProfile: (updates: Partial<GymProfile>) => void;
-  updateWebsiteSettings: (updates: Partial<PublicWebsiteSettings>) => void;
   resetData: () => void;
 }
 
@@ -68,7 +74,16 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [gymProfile, setGymProfile] = useState<GymProfile>({} as GymProfile);
-  const [websiteSettings, setWebsiteSettings] = useState<PublicWebsiteSettings>({} as PublicWebsiteSettings);
+
+  // Gym Center SaaS Subscription (Standard 100 GHS, Pro 150 GHS, Premium 200 GHS)
+  const [gymSubscription, setGymSubscription] = useState<GymSaaSSubscription>(() => {
+    return getStoredItem<GymSaaSSubscription>(APP_CONFIG.storageKeys.subscription, {
+      tier: 'pro',
+      status: 'Active',
+      nextBillingDate: '2026-11-01',
+      monthlyAmount: 150,
+    });
+  });
 
   // Initialize data on mount
   useEffect(() => {
@@ -77,7 +92,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setMembers(data.members);
     setPayments(data.payments);
     setGymProfile(data.gymProfile);
-    setWebsiteSettings(data.websiteSettings);
     setIsLoaded(true);
   }, []);
 
@@ -102,10 +116,25 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     setStoredItem(APP_CONFIG.storageKeys.gymProfile, newProfile);
   }, []);
 
-  const persistWebsiteSettings = useCallback((newSettings: PublicWebsiteSettings) => {
-    setWebsiteSettings(newSettings);
-    setStoredItem(APP_CONFIG.storageKeys.websiteSettings, newSettings);
-  }, []);
+  // Update SaaS Subscription Tier
+  const updateGymSubscription = useCallback(
+    (tier: SaaSSubscriptionTier) => {
+      const targetPlan = SAAS_SUBSCRIPTION_PLANS.find((p) => p.id === tier);
+      const updated: GymSaaSSubscription = {
+        tier,
+        status: 'Active',
+        nextBillingDate: '2026-11-01',
+        monthlyAmount: targetPlan?.price || 150,
+      };
+      setGymSubscription(updated);
+      setStoredItem(APP_CONFIG.storageKeys.subscription, updated);
+      success(
+        `Subscription Tier Updated to ${targetPlan?.name || tier}`,
+        `Your gym workspace is now active on the ${targetPlan?.name} Plan (GH₵ ${targetPlan?.price}/month).`
+      );
+    },
+    [success]
+  );
 
   // Compute live dynamic stats
   const stats = useMemo<DashboardStats>(() => {
@@ -139,38 +168,60 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   }, [members, payments]);
 
   // Member getters and actions
-  const getMemberById = useCallback((id: string) => {
-    return members.find((m) => m.id === id);
-  }, [members]);
+  const getMemberById = useCallback(
+    (id: string) => {
+      return members.find((m) => m.id === id);
+    },
+    [members]
+  );
 
-  const getPlanById = useCallback((id: string) => {
-    return plans.find((p) => p.id === id);
-  }, [plans]);
+  const getPlanById = useCallback(
+    (id: string) => {
+      return plans.find((p) => p.id === id);
+    },
+    [plans]
+  );
 
-  const getPaymentsByMemberId = useCallback((memberId: string) => {
-    return payments
-      .filter((p) => p.memberId === memberId)
-      .sort((a, b) => new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime());
-  }, [payments]);
+  const getPaymentsByMemberId = useCallback(
+    (memberId: string) => {
+      return payments.filter((p) => p.memberId === memberId);
+    },
+    [payments]
+  );
 
-  const getActiveMembersCountForPlan = useCallback((planId: string) => {
-    return members.filter((m) => m.planId === planId).length;
-  }, [members]);
+  const getActiveMembersCountForPlan = useCallback(
+    (planIdOrName: string) => {
+      return members.filter((m) => {
+        const matchesPlan = m.planId === planIdOrName || m.planName === planIdOrName;
+        if (!matchesPlan) return false;
+        const status = getMembershipStatus(m.expiryDate);
+        return status.status === 'active' || status.status === 'expiring_soon';
+      }).length;
+    },
+    [members]
+  );
 
-  // Add Member
+  // Add Member - with automatic registration payment entry
   const addMember = useCallback(
     (
-      memberData: Omit<Member, 'id' | 'createdAt' | 'updatedAt' | 'joinedDate'>,
+      memberData: Omit<Member, 'id' | 'createdAt' | 'updatedAt' | 'joinedDate'> & { planName?: string },
       initialPayment?: { amount: number; paymentMethod: PaymentMethod; notes?: string }
     ) => {
       const now = new Date();
       const todayStr = formatToInputDate(now);
-      const uniqueSuffix = Math.floor(1000 + Math.random() * 9000);
-      const newMemberId = `mem_${Date.now().toString().slice(-4)}_${uniqueSuffix}`;
+      const newMemberId = `mem_${Date.now().toString().slice(-6)}`;
+
+      const selectedPlan = plans.find((p) => p.id === memberData.planId);
+      const resolvedPlanName =
+        memberData.planName?.trim() ||
+        selectedPlan?.name ||
+        'Membership Subscription';
 
       const newMember: Member = {
         ...memberData,
         id: newMemberId,
+        planName: resolvedPlanName,
+        planId: memberData.planId || 'custom_plan',
         joinedDate: memberData.startDate || todayStr,
         createdAt: todayStr,
         updatedAt: todayStr,
@@ -179,21 +230,24 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       const updatedMembers = [newMember, ...members];
       persistMembers(updatedMembers);
 
-      if (initialPayment && initialPayment.amount > 0) {
-        const selectedPlan = plans.find((p) => p.id === memberData.planId);
+      // Automatically create payment in ledger so receipt can be printed directly from Payments
+      if (initialPayment !== undefined && initialPayment.amount >= 0) {
         const refSuffix = Math.floor(1000 + Math.random() * 9000);
         const newPayment: Payment = {
           id: `pay_${Date.now()}_${refSuffix}`,
           reference: `REC-${now.getFullYear()}-${refSuffix}`,
           memberId: newMember.id,
           memberName: newMember.fullName,
-          planId: memberData.planId,
-          planName: selectedPlan?.name || 'Membership Plan',
+          planId: newMember.planId,
+          planName: resolvedPlanName,
           amount: initialPayment.amount,
           paymentMethod: initialPayment.paymentMethod,
           paymentDate: memberData.startDate || todayStr,
+          expiryDate: memberData.expiryDate, // Store expiration date evidence for receipt
           status: 'Completed',
-          notes: initialPayment.notes || 'Initial registration payment',
+          notes:
+            initialPayment.notes ||
+            `Initial registration (${resolvedPlanName}) - Valid until ${memberData.expiryDate}`,
           createdAt: todayStr,
         };
 
@@ -234,11 +288,11 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     [members, persistMembers, info]
   );
 
-  // Renew Member
+  // Renew Member - with automatic renewal payment entry
   const renewMember = useCallback(
     (
       memberId: string,
-      planId: string,
+      planNameOrId: string,
       startDate: string,
       expiryDate: string,
       paymentDetails?: { amount: number; paymentMethod: PaymentMethod; notes?: string }
@@ -251,11 +305,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      const selectedPlan = plans.find((p) => p.id === planNameOrId);
+      const resolvedPlanName =
+        selectedPlan?.name ||
+        planNameOrId?.trim() ||
+        member.planName ||
+        'Membership Renewal';
+
       const updatedMembers = members.map((m) => {
         if (m.id === memberId) {
           return {
             ...m,
-            planId,
+            planId: selectedPlan?.id || member.planId || 'custom_plan',
+            planName: resolvedPlanName,
             startDate,
             expiryDate,
             updatedAt: todayStr,
@@ -266,28 +328,34 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
       persistMembers(updatedMembers);
 
-      if (paymentDetails && paymentDetails.amount > 0) {
-        const selectedPlan = plans.find((p) => p.id === planId);
+      // Automatically record renewal payment into financial ledger
+      if (paymentDetails && paymentDetails.amount >= 0) {
         const refSuffix = Math.floor(1000 + Math.random() * 9000);
         const newPayment: Payment = {
           id: `pay_${Date.now()}_${refSuffix}`,
           reference: `REC-${now.getFullYear()}-${refSuffix}`,
           memberId: member.id,
           memberName: member.fullName,
-          planId: planId,
-          planName: selectedPlan?.name || 'Membership Plan Renewal',
+          planId: selectedPlan?.id || member.planId || 'custom_plan',
+          planName: resolvedPlanName,
           amount: paymentDetails.amount,
           paymentMethod: paymentDetails.paymentMethod,
           paymentDate: startDate || todayStr,
+          expiryDate: expiryDate, // Store expiration date evidence for receipt
           status: 'Completed',
-          notes: paymentDetails.notes || `Membership renewal (${selectedPlan?.name || 'Plan'})`,
+          notes:
+            paymentDetails.notes ||
+            `Membership renewal (${resolvedPlanName}) - Valid until ${expiryDate}`,
           createdAt: todayStr,
         };
 
         persistPayments([newPayment, ...payments]);
       }
 
-      success('Membership Renewed', `${member.fullName}'s membership is now renewed until ${expiryDate}.`);
+      success(
+        'Membership Renewed & Payment Recorded',
+        `${member.fullName}'s renewal until ${expiryDate} is saved. Receipt ready in Payments.`
+      );
     },
     [members, plans, payments, persistMembers, persistPayments, success, error]
   );
@@ -297,15 +365,29 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     (planData: Omit<MembershipPlan, 'id' | 'createdAt' | 'updatedAt'>) => {
       const todayStr = formatToInputDate(new Date());
       const newPlanId = `plan_${Date.now().toString().slice(-6)}`;
+      const durationValue = planData.durationValue || 1;
+      const durationUnit = planData.durationUnit || 'months';
+      let durationMonths = planData.durationMonths;
+      if (!durationMonths) {
+        if (durationUnit === 'years') durationMonths = durationValue * 12;
+        else if (durationUnit === 'months') durationMonths = durationValue;
+        else durationMonths = 1;
+      }
+
       const newPlan: MembershipPlan = {
         ...planData,
         id: newPlanId,
+        durationValue,
+        durationUnit,
+        durationMonths,
+        isActive: planData.isActive !== false,
         createdAt: todayStr,
         updatedAt: todayStr,
       };
 
-      persistPlans([...plans, newPlan]);
-      success('Plan created', `"${newPlan.name}" has been created.`);
+      const updatedPlans = [...plans, newPlan];
+      persistPlans(updatedPlans);
+      success('Subscription Plan Created', `"${newPlan.name}" is now ready for quick member registration.`);
       return newPlan;
     },
     [plans, persistPlans, success]
@@ -344,21 +426,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const deletePlan = useCallback(
     (id: string): { success: boolean; message?: string } => {
-      const assignedCount = members.filter((m) => m.planId === id).length;
-      if (assignedCount > 0) {
-        return {
-          success: false,
-          message: `Cannot delete plan because ${assignedCount} member(s) are currently assigned to it. You can deactivate this plan instead.`,
-        };
-      }
-
       const plan = plans.find((p) => p.id === id);
       const updatedPlans = plans.filter((p) => p.id !== id);
       persistPlans(updatedPlans);
-      info('Plan removed', `"${plan?.name || 'Plan'}" has been deleted.`);
+      info('Plan removed', `"${plan?.name || 'Plan'}" was removed from your gym plans.`);
       return { success: true };
     },
-    [members, plans, persistPlans, info]
+    [plans, persistPlans, info]
   );
 
   // Payment actions
@@ -391,65 +465,36 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       });
 
       persistPayments(updatedPayments);
-      success('Payment updated', 'Transaction details have been updated.');
+      success('Payment updated', 'Transaction record was updated.');
     },
     [payments, persistPayments, success]
   );
 
   const deletePayment = useCallback(
     (id: string) => {
-      const target = payments.find((p) => p.id === id);
       const updatedPayments = payments.filter((p) => p.id !== id);
       persistPayments(updatedPayments);
-      info('Payment deleted', `Receipt ${target?.reference || id} was removed.`);
+      info('Payment deleted', 'Transaction was removed from your records.');
     },
     [payments, persistPayments, info]
   );
 
-  // Gym Profile & Settings actions
+  // Settings & Profile actions
   const updateGymProfile = useCallback(
     (updates: Partial<GymProfile>) => {
       const updated = { ...gymProfile, ...updates };
       persistGymProfile(updated);
-
-      // Keep website settings synchronized with profile name/location/contact
-      const updatedWeb = {
-        ...websiteSettings,
-        gymName: updated.name || websiteSettings.gymName,
-        location: updated.location || websiteSettings.location,
-        contactEmail: updated.email || websiteSettings.contactEmail,
-        contactPhone: updated.phone || websiteSettings.contactPhone,
-      };
-      persistWebsiteSettings(updatedWeb);
-
-      success('Settings saved', 'Gym profile and public website details updated.');
+      success('Settings saved', 'Gym profile information was updated.');
     },
-    [gymProfile, websiteSettings, persistGymProfile, persistWebsiteSettings, success]
+    [gymProfile, persistGymProfile, success]
   );
 
-  const updateWebsiteSettings = useCallback(
-    (updates: Partial<PublicWebsiteSettings>) => {
-      const updated = { ...websiteSettings, ...updates };
-      persistWebsiteSettings(updated);
-
-      // Keep gym profile name in sync
-      if (updates.gymName && updates.gymName !== gymProfile.name) {
-        persistGymProfile({ ...gymProfile, name: updates.gymName });
-      }
-
-      success('Website updated', 'Public gym website configuration saved.');
-    },
-    [websiteSettings, gymProfile, persistWebsiteSettings, persistGymProfile, success]
-  );
-
-  // Reset Demo Data
   const resetData = useCallback(() => {
     const fresh = resetDemoStorage();
     setPlans(fresh.plans);
     setMembers(fresh.members);
     setPayments(fresh.payments);
     setGymProfile(fresh.gymProfile);
-    setWebsiteSettings(fresh.websiteSettings);
     info('Demo Data Reset', 'All records have been restored to initial sample data.');
   }, [info]);
 
@@ -460,9 +505,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         plans,
         payments,
         gymProfile,
-        websiteSettings,
         stats,
         isLoaded,
+
+        gymSubscription,
+        subscriptionPlans: SAAS_SUBSCRIPTION_PLANS,
+        updateGymSubscription,
 
         addMember,
         updateMember,
@@ -483,7 +531,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         getPaymentsByMemberId,
 
         updateGymProfile,
-        updateWebsiteSettings,
         resetData,
       }}
     >
