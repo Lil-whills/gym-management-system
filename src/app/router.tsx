@@ -6,7 +6,6 @@ import { AddMemberPage } from '../features/members/AddMemberPage';
 import { MemberDetailPage } from '../features/members/MemberDetailPage';
 import { PlansPage } from '../features/plans/PlansPage';
 import { PaymentsPage } from '../features/payments/PaymentsPage';
-import { SettingsPage } from '../features/settings/SettingsPage';
 
 export const router = createBrowserRouter([
   // Main Authenticated / Demo SaaS Dashboard Layout
@@ -45,10 +44,6 @@ export const router = createBrowserRouter([
       {
         path: 'payments',
         element: <PaymentsPage />,
-      },
-      {
-        path: 'settings',
-        element: <SettingsPage />,
       },
       {
         path: '*',

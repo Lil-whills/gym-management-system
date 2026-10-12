@@ -4,7 +4,6 @@ import {
   LayoutDashboard,
   Users,
   Receipt,
-  Settings,
   Dumbbell,
   Crown,
   X,
@@ -44,12 +43,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Payments',
       path: '/payments',
       icon: Receipt,
-      badge: undefined,
-    },
-    {
-      label: 'Settings',
-      path: '/settings',
-      icon: Settings,
       badge: undefined,
     },
   ];

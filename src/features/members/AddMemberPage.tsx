@@ -6,7 +6,12 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
-import { getTodayString, calculatePlanExpiry, formatPlanDuration } from '../../lib/dates';
+import {
+  getTodayString,
+  calculatePlanExpiry,
+  formatPlanDuration,
+  parseLocalDate,
+} from '../../lib/dates';
 import { validateMemberForm } from '../../lib/validation';
 import { APP_CONFIG } from '../../constants/app';
 import { formatCurrency } from '../../lib/currency';
@@ -14,14 +19,10 @@ import { CreatePlanModal } from '../plans/CreatePlanModal';
 import {
   ArrowLeft,
   UserPlus,
-  Calendar,
-  Sparkles,
-  ShieldCheck,
   Plus,
   Clock,
   CheckCircle2,
   Trash2,
-  Lock,
   FileEdit,
 } from 'lucide-react';
 import { addDays, addMonths, addYears, format } from 'date-fns';
@@ -92,9 +93,8 @@ export const AddMemberPage: React.FC = () => {
   // When switching to manual / ad-hoc entry mode (Mode 2: Unlocked custom inputs)
   const handleSelectManualMode = () => {
     setSelectedPlanId('manual');
-    setPlanName('Custom Pass (Manual)');
+    setPlanName('Custom Pass');
     setPaymentAmount('100');
-    // Default 1 month from start date, but freely editable
     const defaultExpiry = format(addMonths(new Date(startDate || new Date()), 1), 'yyyy-MM-dd');
     setExpiryDate(defaultExpiry);
   };
@@ -117,7 +117,7 @@ export const AddMemberPage: React.FC = () => {
 
   // Manual date adjusters (ONLY active in manual mode)
   const applyManualDuration = (type: 'week' | '1month' | '3months' | '6months' | '1year') => {
-    const base = startDate ? new Date(startDate) : new Date();
+    const base = startDate ? parseLocalDate(startDate) : new Date();
     let calculated = new Date();
 
     if (type === 'week') calculated = addDays(base, 7);
@@ -209,14 +209,12 @@ export const AddMemberPage: React.FC = () => {
         </Link>
       </div>
 
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-[#172033] tracking-tight">
             Register New Member
           </h2>
-          <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
-            Select an established gym plan or choose manual one-off entry.
-          </p>
         </div>
 
         <Button
@@ -227,17 +225,14 @@ export const AddMemberPage: React.FC = () => {
           leftIcon={<Plus className="w-4 h-4 text-[#3B82F6]" />}
           className="self-start sm:self-auto border-blue-200 text-[#3B82F6] hover:bg-blue-50 font-semibold"
         >
-          + Add New Plan
+          Add New Plan
         </Button>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Section 1: Personal Details */}
         <Card>
-          <CardHeader
-            title="1. Personal Contact Information"
-            subtitle="Member's full name, direct phone number, and optional emergency contact"
-          />
+          <CardHeader title="1. Personal Information" />
           <CardBody className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
@@ -257,7 +252,6 @@ export const AddMemberPage: React.FC = () => {
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 error={errors.phone}
-                helperText="Ghanaian mobile number for notifications"
               />
             </div>
 
@@ -272,7 +266,7 @@ export const AddMemberPage: React.FC = () => {
               />
 
               <Input
-                label="Emergency Contact (Name & Phone)"
+                label="Emergency Contact (Optional)"
                 placeholder="e.g. Sister: Ama (020 123 4567)"
                 value={emergencyContact}
                 onChange={(e) => setEmergencyContact(e.target.value)}
@@ -283,276 +277,172 @@ export const AddMemberPage: React.FC = () => {
 
         {/* Section 2: Subscription Plan Selection OR Manual Entry */}
         <Card>
-          <div className="px-6 py-4 border-b border-[#E7ECF3] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-bold text-[#172033]">
-                2. Subscription Plan & Expiry Duration
-              </h3>
-              <p className="text-xs text-[#64748B] mt-0.5">
-                Select a predefined subscription plan, or use manual entry for ad-hoc custom durations.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsCreatePlanOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#3B82F6] bg-blue-50 hover:bg-blue-100 rounded-lg border border-blue-200 transition-colors cursor-pointer self-start sm:self-auto"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Create Subscription Plan</span>
-            </button>
-          </div>
-
+          <CardHeader title="2. Subscription Plan" />
           <CardBody className="space-y-5">
             {/* Clickable Plan Shortcuts Grid */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <label className="text-xs font-semibold text-[#172033] flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#3B82F6]" />
-                  <span>Choose Package Mode (Click to select):</span>
-                </label>
-                <span className="text-[11px] text-[#64748B]">
-                  {plans.length} defined plan{plans.length === 1 ? '' : 's'}
-                </span>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Predefined Subscription Plans */}
+              {plans.map((p) => {
+                const isSelected = selectedPlanId === p.id;
+                const durationLabel = formatPlanDuration(
+                  p.durationValue || p.durationMonths || 1,
+                  p.durationUnit || 'months'
+                );
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {/* Predefined Subscription Plans */}
-                {plans.map((p) => {
-                  const isSelected = selectedPlanId === p.id;
-                  const durationLabel = formatPlanDuration(
-                    p.durationValue || p.durationMonths || 1,
-                    p.durationUnit || 'months'
-                  );
-
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => handleSelectPlan(p)}
-                      className={`relative p-3.5 rounded-xl border transition-all cursor-pointer text-left flex flex-col justify-between gap-2.5 ${
-                        isSelected
-                          ? 'bg-blue-50/90 border-blue-400 ring-2 ring-blue-500/20 shadow-xs'
-                          : 'bg-white border-[#E7ECF3] hover:border-slate-300 hover:shadow-xs'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="space-y-0.5">
-                          <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-xs text-[#172033] line-clamp-1">
-                              {p.name}
-                            </span>
-                            {isSelected && (
-                              <CheckCircle2 className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 text-[11px] text-[#64748B]">
-                            <Clock className="w-3 h-3 text-[#3B82F6]" />
-                            <span>{durationLabel}</span>
-                          </div>
-                        </div>
-
-                        {/* Price Tag */}
-                        <div className="text-right">
-                          <span className="text-xs font-black text-[#172033] block">
-                            {formatCurrency(p.price)}
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => handleSelectPlan(p)}
+                    className={`group relative p-3.5 rounded-xl border transition-all cursor-pointer text-left flex flex-col justify-between gap-3 ${
+                      isSelected
+                        ? 'bg-blue-50/70 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                        : 'bg-white border-[#E7ECF3] hover:border-slate-300 hover:shadow-xs'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold text-xs text-[#172033] truncate">
+                            {p.name}
                           </span>
+                          {isSelected && (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 text-[11px] text-[#64748B] mt-0.5">
+                          <Clock className="w-3 h-3 text-[#3B82F6]" />
+                          <span>{durationLabel}</span>
                         </div>
                       </div>
 
-                      {/* Bottom row: status & visible delete button */}
-                      <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-[11px]">
-                        <span className={isSelected ? 'text-[#3B82F6] font-semibold' : 'text-[#64748B]'}>
-                          {isSelected ? '✓ Selected (Locked Terms)' : 'Click to apply'}
+                      <div className="text-right shrink-0">
+                        <span className="text-xs font-black text-[#172033]">
+                          {formatCurrency(p.price)}
                         </span>
-
-                        <button
-                          type="button"
-                          title={`Delete "${p.name}" from gym plans`}
-                          onClick={(e) => handleDeletePlan(e, p.id, p.name)}
-                          className="text-[#94A3B8] hover:text-red-600 hover:bg-red-50 transition-colors p-1 rounded cursor-pointer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     </div>
-                  );
-                })}
 
-                {/* Manual / One-Off Entry Card */}
-                <div
-                  onClick={handleSelectManualMode}
-                  className={`p-3.5 rounded-xl border transition-all cursor-pointer text-left flex flex-col justify-between gap-2.5 ${
-                    isManualMode
-                      ? 'bg-amber-50/90 border-amber-400 ring-2 ring-amber-500/20 shadow-xs'
-                      : 'bg-slate-50/70 border-dashed border-slate-300 hover:border-slate-400 hover:bg-slate-100/60'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <FileEdit className={`w-3.5 h-3.5 ${isManualMode ? 'text-amber-600' : 'text-[#64748B]'}`} />
-                        <span className="font-bold text-xs text-[#172033]">
-                          Manual / One-Off Entry
-                        </span>
-                        {isManualMode && (
-                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        )}
-                      </div>
-                      <span className="text-[11px] text-[#64748B] block">
-                        Ad-hoc terms (e.g. 3 weeks trial pass)
-                      </span>
+                    {/* Delete plan button */}
+                    <div className="flex items-center justify-end pt-1 border-t border-slate-100">
+                      <button
+                        type="button"
+                        title={`Delete "${p.name}"`}
+                        onClick={(e) => handleDeletePlan(e, p.id, p.name)}
+                        className="text-[#94A3B8] hover:text-red-600 hover:bg-red-50 transition-colors p-1 rounded cursor-pointer opacity-0 group-hover:opacity-100"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-
-                    <span className="text-[10px] font-bold uppercase text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                      Manual
-                    </span>
                   </div>
+                );
+              })}
 
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-200/80 text-[11px]">
-                    <span className={isManualMode ? 'text-amber-700 font-semibold' : 'text-[#64748B]'}>
-                      {isManualMode ? '✓ Unlocked Inputs' : 'Click to customize manually'}
+              {/* Manual / One-Off Entry Card */}
+              <div
+                onClick={handleSelectManualMode}
+                className={`p-3.5 rounded-xl border transition-all cursor-pointer text-left flex flex-col justify-between gap-3 ${
+                  isManualMode
+                    ? 'bg-amber-50/70 border-amber-500 ring-2 ring-amber-500/20 shadow-xs'
+                    : 'bg-slate-50/60 border-dashed border-slate-300 hover:border-slate-400'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <FileEdit
+                        className={`w-3.5 h-3.5 ${
+                          isManualMode ? 'text-amber-600' : 'text-[#64748B]'
+                        }`}
+                      />
+                      <span className="font-bold text-xs text-[#172033]">
+                        Manual / Custom Entry
+                      </span>
+                      {isManualMode && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      )}
+                    </div>
+                    <span className="text-[11px] text-[#64748B] block">
+                      Custom duration & fee
                     </span>
                   </div>
                 </div>
+                <div className="pt-1 border-t border-transparent" />
               </div>
             </div>
 
-            {/* Mode Banner Indicator */}
-            {isManualMode ? (
-              <div className="p-3 bg-amber-50/90 rounded-xl border border-amber-200 text-xs text-amber-900 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileEdit className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>
-                    <strong>Manual Entry Mode Active:</strong> You can enter any custom title, set exact expiry date, and enter any fee. <em>(Manual entries do not pollute subscription plans chart).</em>
-                  </span>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 bg-blue-50/80 rounded-xl border border-blue-200 text-xs text-[#172033] flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-[#3B82F6] shrink-0" />
-                  <span>
-                    <strong>Subscription Plan Active:</strong> Expiry date and fee are strictly determined by <strong>{selectedPlan?.name}</strong>.
-                  </span>
-                </div>
-                <span className="text-[11px] text-[#3B82F6] font-medium">
-                  {formatPlanDuration(selectedPlan?.durationValue || 1, selectedPlan?.durationUnit || 'months')} &bull; {formatCurrency(selectedPlan?.price || 0)}
-                </span>
-              </div>
-            )}
-
-            {/* Plan Title */}
-            <div>
+            {/* Custom Plan Title Input (Only when Manual Mode is selected) */}
+            {isManualMode && (
               <Input
-                label="Subscription Plan / Package Title"
+                label="Custom Plan Title"
                 required
                 value={planName}
                 onChange={(e) => setPlanName(e.target.value)}
-                placeholder="e.g. 3 Weeks Special, Student Pass..."
-                disabled={!isManualMode}
+                placeholder="e.g. 3 Weeks Special, Student Pass"
                 error={errors.planName}
-                helperText={
-                  isManualMode
-                    ? 'Enter any custom title for this manual one-off arrangement'
-                    : `Locked to selected plan "${selectedPlan?.name}". To change, select another plan or switch to Manual Entry.`
-                }
-                prefixElement={
-                  !isManualMode ? (
-                    <Lock className="w-3.5 h-3.5 text-[#64748B]" />
-                  ) : undefined
-                }
               />
-            </div>
+            )}
 
             {/* Dates: Start & Expiry */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
-                label="Access Start Date"
+                label="Start Date"
                 type="date"
                 required
                 value={startDate}
                 onChange={(e) => handleStartDateChange(e.target.value)}
                 error={errors.startDate}
-                helperText="Access validity start date"
               />
 
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-xs font-semibold text-[#172033]">
-                    Access Expiration Date <span className="text-red-500">*</span>
-                  </label>
-                  {!isManualMode ? (
-                    <span className="text-[11px] text-[#3B82F6] font-semibold flex items-center gap-1">
-                      <Lock className="w-3 h-3" />
-                      Locked to plan duration
-                    </span>
-                  ) : (
-                    <span className="text-[11px] text-amber-700 font-semibold flex items-center gap-1">
-                      <FileEdit className="w-3 h-3" />
-                      Manual & Editable
-                    </span>
-                  )}
-                </div>
-                <Input
-                  type="date"
-                  required
-                  value={expiryDate}
-                  onChange={(e) => setExpiryDate(e.target.value)}
-                  disabled={!isManualMode}
-                  error={errors.expiryDate}
-                  helperText={
-                    isManualMode
-                      ? 'Manually pick when this one-off membership expires'
-                      : `Calculated automatically based on ${selectedPlan?.name} duration`
-                  }
-                  prefixElement={
-                    !isManualMode ? (
-                      <Lock className="w-3.5 h-3.5 text-[#64748B]" />
-                    ) : undefined
-                  }
-                />
-              </div>
+              <Input
+                label="Expiry Date"
+                type="date"
+                required
+                value={expiryDate}
+                onChange={(e) => setExpiryDate(e.target.value)}
+                disabled={!isManualMode}
+                error={errors.expiryDate}
+              />
             </div>
 
-            {/* Manual Date Adjusters (ONLY active in Manual Mode) */}
+            {/* Quick Manual Duration Adjusters (ONLY active in Manual Mode) */}
             {isManualMode && (
-              <div className="p-3 bg-amber-50/50 rounded-xl border border-amber-200 flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div className="flex items-center gap-1.5 text-amber-800">
-                  <Calendar className="w-4 h-4 text-amber-600" />
-                  <span className="font-semibold">Quick Manual Duration Adjusters:</span>
-                </div>
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200/80 flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-amber-900">
+                  Quick Manual Duration Adjusters:
+                </span>
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
                     onClick={() => applyManualDuration('week')}
-                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-[11px] font-semibold text-[#172033] cursor-pointer"
+                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-xs font-semibold text-[#172033] cursor-pointer transition-colors"
                   >
                     +1 Week
                   </button>
                   <button
                     type="button"
                     onClick={() => applyManualDuration('1month')}
-                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-[11px] font-semibold text-[#172033] cursor-pointer"
+                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-xs font-semibold text-[#172033] cursor-pointer transition-colors"
                   >
                     +1 Month
                   </button>
                   <button
                     type="button"
                     onClick={() => applyManualDuration('3months')}
-                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-[11px] font-semibold text-[#172033] cursor-pointer"
+                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-xs font-semibold text-[#172033] cursor-pointer transition-colors"
                   >
                     +3 Months
                   </button>
                   <button
                     type="button"
                     onClick={() => applyManualDuration('6months')}
-                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-[11px] font-semibold text-[#172033] cursor-pointer"
+                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-xs font-semibold text-[#172033] cursor-pointer transition-colors"
                   >
                     +6 Months
                   </button>
                   <button
                     type="button"
                     onClick={() => applyManualDuration('1year')}
-                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-[11px] font-semibold text-[#172033] cursor-pointer"
+                    className="px-2.5 py-1 bg-white hover:bg-amber-100 rounded border border-amber-200 text-xs font-semibold text-[#172033] cursor-pointer transition-colors"
                   >
                     +1 Year
                   </button>
@@ -561,56 +451,33 @@ export const AddMemberPage: React.FC = () => {
             )}
 
             <Textarea
-              label="Member Notes & Health Considerations (Optional)"
+              label="Notes (Optional)"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Health conditions, workout preferences, VIP locker assignments..."
+              placeholder="Health conditions, workout preferences, etc."
               rows={2}
             />
           </CardBody>
         </Card>
 
-        {/* Section 3: Initial Registration Payment & Receipt */}
-        <Card className="border-blue-200 shadow-sm">
-          <CardHeader
-            title="3. Initial Registration Payment & Receipt"
-            subtitle="Payment details for this registration. Automatically creates a record in the Payments ledger."
-          />
+        {/* Section 3: Payment */}
+        <Card>
+          <CardHeader title="3. Payment" />
           <CardBody className="space-y-4">
-            <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-100 flex items-center justify-between text-xs text-[#172033]">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span className="font-semibold text-emerald-800">
-                  Automatic Ledger Entry & 1-Click Receipt
-                </span>
-              </div>
-              <span className="text-[11px] text-[#64748B]">
-                Will reflect on the Payments page for instant printing
-              </span>
-            </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Input
-                  label={`Amount Paid (${APP_CONFIG.currency.symbol})`}
-                  type="number"
-                  required
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  disabled={!isManualMode}
-                  prefixElement={
-                    <span className="text-xs font-semibold text-[#64748B] flex items-center gap-1">
-                      {!isManualMode && <Lock className="w-3 h-3 text-[#64748B]" />}
-                      {APP_CONFIG.currency.symbol}
-                    </span>
-                  }
-                  helperText={
-                    !isManualMode
-                      ? `Locked to standard fee for ${selectedPlan?.name}. (Use Manual Entry for custom pricing).`
-                      : 'Enter agreed amount for this manual one-off registration.'
-                  }
-                />
-              </div>
+              <Input
+                label={`Amount Paid (${APP_CONFIG.currency.symbol})`}
+                type="number"
+                required
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                disabled={!isManualMode}
+                prefixElement={
+                  <span className="text-xs font-semibold text-[#64748B]">
+                    {APP_CONFIG.currency.symbol}
+                  </span>
+                }
+              />
 
               <Select
                 label="Payment Method"
@@ -624,17 +491,17 @@ export const AddMemberPage: React.FC = () => {
             </div>
 
             <Textarea
-              label="Payment Notes / Transaction Reference (Optional)"
+              label="Payment Notes (Optional)"
               value={paymentNotes}
               onChange={(e) => setPaymentNotes(e.target.value)}
-              placeholder="e.g. MTN MoMo transaction ID or front-desk cash receipt note"
+              placeholder="e.g. Transaction ID or receipt note"
               rows={2}
             />
           </CardBody>
         </Card>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E7ECF3]">
+        <div className="flex items-center justify-end gap-3 pt-2">
           <Button
             type="button"
             variant="outline"
@@ -649,7 +516,7 @@ export const AddMemberPage: React.FC = () => {
             isLoading={isSubmitting}
             leftIcon={<UserPlus className="w-4 h-4" />}
           >
-            Register Member & View Payment Receipt
+            Register Member
           </Button>
         </div>
       </form>

@@ -1,364 +1,397 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useData } from '../../context/DataContext';
-import { Card, CardHeader } from '../../components/ui/Card';
-import { Badge } from '../../components/ui/Badge';
-import { Button } from '../../components/ui/Button';
-import { formatCurrency } from '../../lib/currency';
-import { APP_CONFIG } from '../../constants/app';
 import {
   Check,
-  X,
-  Crown,
-  Sparkles,
   Globe,
+  Sparkles,
+  Smartphone,
   Bell,
+  CreditCard,
   Zap,
+  Printer,
+  Users,
+  Calendar,
+  Shield,
+  Crown,
+  Clock,
 } from 'lucide-react';
 import type { SaaSSubscriptionTier } from '../../types';
 
 export const PlansPage: React.FC = () => {
-  const { gymSubscription, updateGymSubscription, subscriptionPlans } = useData();
+  const { gymSubscription, updateGymSubscription } = useData();
+  const [billingInterval, setBillingInterval] = useState<'monthly' | 'annual'>('monthly');
 
   const handleSelectTier = (tier: SaaSSubscriptionTier) => {
     if (tier === gymSubscription.tier) return;
     updateGymSubscription(tier);
   };
 
-  const currentPlan = subscriptionPlans.find((p) => p.id === gymSubscription.tier);
+  // Pricing helper
+  const getPrice = (monthlyPrice: number) => {
+    if (billingInterval === 'annual') {
+      return Math.round(monthlyPrice * 0.8);
+    }
+    return monthlyPrice;
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-[#3B82F6] text-xs font-bold uppercase tracking-wider mb-2 border border-blue-200">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>LiftDesk Software Licensing</span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black text-[#172033] tracking-tight">
-            Subscription Plans
-          </h2>
-          <p className="text-xs sm:text-sm text-[#64748B] mt-1">
-            Operational tiers for your fitness centre: Standard (GH₵ 100), Pro (GH₵ 150), and Premium (GH₵ 200) per month.
-          </p>
-        </div>
+    <div className="bg-white rounded-3xl p-6 sm:p-10 lg:p-12 border border-[#E2E8F0] shadow-sm space-y-10">
+      {/* Header section matching the template hierarchy in clean white */}
+      <div className="text-center max-w-2xl mx-auto space-y-3">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#0F172A]">
+          See what&apos;s new with LiftDesk Plans
+        </h1>
+        <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
+          Operational tiers for your fitness centre. Standard, Pro, and Premium packages designed to streamline and scale your gym.
+        </p>
 
-        {/* Current Active Plan Badge */}
-        <div className="p-3.5 bg-white rounded-2xl border border-[#E7ECF3] shadow-xs flex items-center gap-3 self-start md:self-auto">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center font-bold shadow-md shadow-blue-500/20">
-            <Crown className="w-5 h-5 text-amber-300" />
-          </div>
-          <div>
-            <span className="text-[10px] uppercase font-bold text-[#64748B] tracking-wider block">
-              Active Facility Subscription
-            </span>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm text-[#172033]">
-                {currentPlan?.name} Plan
-              </span>
-              <Badge variant="success" dot size="sm">
-                Active
-              </Badge>
-            </div>
-            <span className="text-[11px] text-[#3B82F6] font-semibold">
-              {formatCurrency(currentPlan?.price || 150)} / month
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Subscription Tier Cards Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {subscriptionPlans.map((plan) => {
-          const isCurrent = plan.id === gymSubscription.tier;
-          const isPremium = plan.id === 'premium';
-
-          return (
-            <Card
-              key={plan.id}
-              className={`flex flex-col justify-between relative transition-all duration-200 ${
-                isCurrent
-                  ? 'ring-2 ring-[#3B82F6] shadow-lg border-blue-200 bg-white'
-                  : isPremium
-                  ? 'hover:border-purple-300 hover:shadow-md'
-                  : 'hover:border-blue-300 hover:shadow-md'
+        {/* Pill interval switcher */}
+        <div className="pt-2">
+          <div className="inline-flex items-center p-1 bg-slate-100 rounded-full border border-slate-200 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setBillingInterval('monthly')}
+              className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                billingInterval === 'monthly'
+                  ? 'bg-white text-[#0F172A] shadow-xs'
+                  : 'text-[#64748B] hover:text-[#0F172A]'
               }`}
             >
-              {/* Highlight Tag */}
-              {plan.badge && (
-                <div
-                  className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider text-white shadow-sm ${
-                    isPremium
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600'
-                      : 'bg-[#3B82F6]'
-                  }`}
-                >
-                  {plan.badge}
-                </div>
-              )}
-
-              <div>
-                {/* Header Section */}
-                <div className="p-6 border-b border-[#E7ECF3]">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
-                      {plan.category}
-                    </span>
-                    {isCurrent && (
-                      <Badge variant="success" dot size="sm">
-                        Current Plan
-                      </Badge>
-                    )}
-                  </div>
-
-                  <h3 className="text-xl font-black text-[#172033] tracking-tight">
-                    {plan.name} Plan
-                  </h3>
-                  <p className="text-xs text-[#64748B] mt-1 min-h-[32px] leading-relaxed">
-                    {plan.tagline}
-                  </p>
-
-                  <div className="mt-4 flex items-baseline gap-1">
-                    <span className="text-3xl sm:text-4xl font-black text-[#172033]">
-                      {APP_CONFIG.currency.symbol} {plan.price}
-                    </span>
-                    <span className="text-xs font-semibold text-[#64748B]">/ month</span>
-                  </div>
-                </div>
-
-                {/* Features Checklist */}
-                <div className="p-6 space-y-4">
-                  <div>
-                    <span className="text-[11px] font-bold text-[#172033] uppercase tracking-wider block mb-3">
-                      Included Capabilities:
-                    </span>
-                    <ul className="space-y-2.5 text-xs text-[#172033]">
-                      {plan.features.map((feature, idx) => (
-                        <li key={idx} className="flex items-start gap-2.5">
-                          <div className="w-4 h-4 rounded-full bg-emerald-100 text-[#16A34A] flex items-center justify-center shrink-0 mt-0.5">
-                            <Check className="w-2.5 h-2.5 stroke-[3]" />
-                          </div>
-                          <span
-                            className={
-                              feature.startsWith('Everything') ||
-                              feature.includes('Free Branding') ||
-                              feature.includes('Automatic Online') ||
-                              feature.includes('Automated SMS')
-                                ? 'font-bold text-[#172033]'
-                                : 'text-slate-700'
-                            }
-                          >
-                            {feature}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Limitations if any */}
-                  {plan.limitations && plan.limitations.length > 0 && (
-                    <div className="pt-3 border-t border-[#E7ECF3]">
-                      <span className="text-[10px] font-semibold text-[#94A3B8] uppercase tracking-wider block mb-2">
-                        Not Included:
-                      </span>
-                      <ul className="space-y-1.5 text-xs text-[#94A3B8]">
-                        {plan.limitations.map((limit, idx) => (
-                          <li key={idx} className="flex items-center gap-2">
-                            <X className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-                            <span className="line-through">{limit}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Bottom Action */}
-              <div className="p-6 pt-0">
-                <Button
-                  variant={isCurrent ? 'outline' : isPremium ? 'primary' : 'primary'}
-                  className={`w-full justify-center ${
-                    isCurrent
-                      ? 'bg-blue-50/50 text-[#3B82F6] border-blue-200 cursor-default'
-                      : isPremium
-                      ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700'
-                      : ''
-                  }`}
-                  onClick={() => handleSelectTier(plan.id)}
-                  disabled={isCurrent}
-                >
-                  {isCurrent
-                    ? 'Active Workspace Plan'
-                    : isPremium
-                    ? 'Upgrade to Premium (GH₵ 200)'
-                    : `Switch to ${plan.name} (GH₵ ${plan.price})`}
-                </Button>
-              </div>
-            </Card>
-          );
-        })}
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingInterval('annual')}
+              className={`px-5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                billingInterval === 'annual'
+                  ? 'bg-white text-[#0F172A] shadow-xs'
+                  : 'text-[#64748B] hover:text-[#0F172A]'
+              }`}
+            >
+              <span>Annual</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-bold border border-emerald-200">
+                Save 20%
+              </span>
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* Feature Matrix / Comparison Table */}
-      <Card className="overflow-hidden">
-        <CardHeader
-          title="Feature & Service Comparison Matrix"
-          subtitle="Detailed breakdown of capabilities across Standard, Pro, and Premium tiers"
-        />
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-[#64748B] border-b border-[#E7ECF3] uppercase tracking-wider font-semibold">
-              <tr>
-                <th className="py-4 px-6 w-2/5">Feature / Capability</th>
-                <th className="py-4 px-4 text-center">Standard (GH₵ 100)</th>
-                <th className="py-4 px-4 text-center bg-blue-50/50 text-[#3B82F6]">
-                  Pro (GH₵ 150)
-                </th>
-                <th className="py-4 px-4 text-center text-purple-700">
-                  Premium (GH₵ 200)
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#E7ECF3] text-[#172033]">
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Full Member Directory & Manual Registration
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">&#10003;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A] bg-blue-50/20">
-                  &#10003;
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">&#10003;</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Custom Expiry Dates & Terms (1 week, 6 months, etc.)
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">&#10003;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A] bg-blue-50/20">
-                  &#10003;
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">&#10003;</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Payments Ledger & Official 1-Copy Receipt Printing
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">&#10003;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A] bg-blue-50/20">
-                  &#10003;
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">&#10003;</td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Free Branding Gym Website (Deployed Online & Google-Indexed)
-                </td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8]">&mdash;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A] bg-blue-50/20">
-                  &#10003; Included
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">
-                  &#10003; Included
-                </td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Automated SMS / Email Notifications to Members on Expiry Dates
-                </td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8]">&mdash;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A] bg-blue-50/20">
-                  &#10003; Automated
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">
-                  &#10003; Automated
-                </td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Online Member Self-Registration via Gym Portal
-                </td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8]">&mdash;</td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8] bg-blue-50/20">&mdash;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">
-                  &#10003; Self-Service
-                </td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Automatic Online Renewal by Members Directly
-                </td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8]">&mdash;</td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8] bg-blue-50/20">&mdash;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">
-                  &#10003; 24/7 Online
-                </td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Instant SMS / Email Confirmation on Successful Subscription
-                </td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8]">&mdash;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A] bg-blue-50/20">
-                  &#10003;
-                </td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">
-                  &#10003;
-                </td>
-              </tr>
-              <tr>
-                <td className="py-3.5 px-6 font-semibold">
-                  Online Receipt Viewing & Direct Print by Members
-                </td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8]">&mdash;</td>
-                <td className="py-3.5 px-4 text-center text-[#94A3B8] bg-blue-50/20">&mdash;</td>
-                <td className="py-3.5 px-4 text-center font-bold text-[#16A34A]">
-                  &#10003; Online Portal
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      {/* 3 Tier Cards Grid in crisp white */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto items-stretch">
+        {/* 1. Standard Card */}
+        {(() => {
+          const isCurrent = gymSubscription.tier === 'standard';
+          const price = getPrice(100);
 
-      {/* Value Add Highlights */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 bg-white rounded-xl border border-[#E7ECF3] flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-blue-100 text-[#3B82F6] flex items-center justify-center shrink-0">
-            <Globe className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="font-bold text-xs text-[#172033]">Free Branding Website</h4>
-            <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
-              Included on Pro & Premium. Fully hosted, branded with your gym logo, and indexed on Google Search.
-            </p>
-          </div>
-        </div>
+          return (
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#E2E8F0] hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                {/* Top header row */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
+                    Standard
+                  </span>
+                </div>
 
-        <div className="p-4 bg-white rounded-xl border border-[#E7ECF3] flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-[#16A34A] flex items-center justify-center shrink-0">
-            <Bell className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="font-bold text-xs text-[#172033]">Automated Expiry Alerts</h4>
-            <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
-              Instant SMS and email reminders notify members 3 days and 1 day prior to membership expiry.
-            </p>
-          </div>
-        </div>
+                {/* Title & Description */}
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
+                    Core Management
+                  </h2>
+                  <p className="text-xs text-[#64748B] mt-2 min-h-[36px] leading-relaxed">
+                    Essential tools for boutique studios and front-desk member registration.
+                  </p>
+                </div>
 
-        <div className="p-4 bg-white rounded-xl border border-[#E7ECF3] flex items-start gap-3">
-          <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
-            <Zap className="w-4 h-4" />
-          </div>
-          <div>
-            <h4 className="font-bold text-xs text-[#172033]">Online Member Portal</h4>
-            <p className="text-[11px] text-[#64748B] mt-0.5 leading-relaxed">
-              Premium exclusive: Members register, renew online via MoMo, and print their own receipts anytime.
-            </p>
-          </div>
-        </div>
+                {/* Action Button right below description */}
+                <div>
+                  {isCurrent ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 rounded-full text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-default"
+                    >
+                      Your current plan
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSelectTier('standard')}
+                      className="w-full py-2.5 rounded-full text-xs font-bold bg-[#0F172A] text-white hover:bg-[#1E293B] transition-all cursor-pointer shadow-xs"
+                    >
+                      Switch to Standard
+                    </button>
+                  )}
+                </div>
+
+                {/* Price */}
+                <div className="pt-2">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl sm:text-4xl font-extrabold text-[#0F172A]">
+                      GH₵ {price}
+                    </span>
+                    <span className="text-xs text-[#64748B] font-medium">/ month</span>
+                  </div>
+                  {billingInterval === 'annual' && (
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      Billed annually (GH₵ 960/yr)
+                    </p>
+                  )}
+                </div>
+
+                {/* Features List */}
+                <div className="pt-2 space-y-3">
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Users className="w-4 h-4 text-[#64748B] shrink-0" />
+                    <span>Full member directory & profiles</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Calendar className="w-4 h-4 text-[#64748B] shrink-0" />
+                    <span>Front-desk manual registration</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Clock className="w-4 h-4 text-[#64748B] shrink-0" />
+                    <span>Flexible custom expiry tracking</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <CreditCard className="w-4 h-4 text-[#64748B] shrink-0" />
+                    <span>Payment ledger & cash tracking</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Printer className="w-4 h-4 text-[#64748B] shrink-0" />
+                    <span>Single-copy official receipt printing</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Shield className="w-4 h-4 text-[#64748B] shrink-0" />
+                    <span>Offline local data persistence</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer note */}
+              <div className="mt-8 pt-4 border-t border-slate-100 text-[11px] text-[#64748B]">
+                Essential front-desk setup
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 2. Pro Card (RECOMMENDED in crisp white with blue highlights) */}
+        {(() => {
+          const isCurrent = gymSubscription.tier === 'pro';
+          const price = getPrice(150);
+
+          return (
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border-2 border-[#3B82F6] shadow-xl shadow-blue-500/10 flex flex-col justify-between relative ring-4 ring-blue-500/10">
+              <div className="space-y-4">
+                {/* Top header row */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#3B82F6]">
+                    Pro
+                  </span>
+                  <span className="text-[10px] font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-blue-50 text-[#3B82F6] border border-blue-200">
+                    RECOMMENDED
+                  </span>
+                </div>
+
+                {/* Title & Description */}
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
+                    Growth & Automation
+                  </h2>
+                  <p className="text-xs text-[#64748B] mt-2 min-h-[36px] leading-relaxed">
+                    Branded gym website and automated expiry SMS alerts to maximize member retention.
+                  </p>
+                </div>
+
+                {/* Action Button */}
+                <div>
+                  {isCurrent ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 rounded-full text-xs font-bold bg-blue-50 text-blue-600 border border-blue-200 cursor-default"
+                    >
+                      Your current plan
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSelectTier('pro')}
+                      className="w-full py-2.5 rounded-full text-xs font-bold bg-[#3B82F6] hover:bg-[#2563EB] text-white shadow-md shadow-blue-500/25 transition-all cursor-pointer"
+                    >
+                      Switch to Pro
+                    </button>
+                  )}
+                </div>
+
+                {/* Price */}
+                <div className="pt-2">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl sm:text-4xl font-extrabold text-[#0F172A]">
+                      GH₵ {price}
+                    </span>
+                    <span className="text-xs text-[#64748B] font-medium">/ month</span>
+                  </div>
+                  {billingInterval === 'annual' && (
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      Billed annually (GH₵ 1,440/yr)
+                    </p>
+                  )}
+                </div>
+
+                {/* Features List */}
+                <div className="pt-2 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#0F172A]">
+                    <span>Everything in Standard, plus:</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#1E293B]">
+                    <Globe className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                    <span>Free branded gym website online</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#1E293B]">
+                    <Sparkles className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                    <span>Google Search SEO indexing</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#1E293B]">
+                    <Smartphone className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                    <span>Automated SMS expiry notifications</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#1E293B]">
+                    <Bell className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                    <span>Automated email reminder alerts</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#1E293B]">
+                    <CreditCard className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                    <span>Multi-channel payment recording (MoMo)</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#1E293B]">
+                    <Zap className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                    <span>Revenue breakdown & package metrics</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#1E293B]">
+                    <Check className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                    <span>Priority gym setup & onboarding</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer note */}
+              <div className="mt-8 pt-4 border-t border-blue-100 text-[11px] text-[#3B82F6] font-medium">
+                Our most popular choice for modern fitness clubs
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* 3. Premium Card */}
+        {(() => {
+          const isCurrent = gymSubscription.tier === 'premium';
+          const price = getPrice(200);
+
+          return (
+            <div className="bg-white rounded-3xl p-6 sm:p-7 border border-[#E2E8F0] hover:border-slate-300 hover:shadow-md transition-all flex flex-col justify-between">
+              <div className="space-y-4">
+                {/* Top header row */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
+                    Premium
+                  </span>
+                </div>
+
+                {/* Title & Description */}
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
+                    Maximum Power
+                  </h2>
+                  <p className="text-xs text-[#64748B] mt-2 min-h-[36px] leading-relaxed">
+                    The ultimate 24/7 digital suite with online member self-service and direct renewals.
+                  </p>
+                </div>
+
+                {/* Action Button */}
+                <div>
+                  {isCurrent ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 rounded-full text-xs font-bold bg-slate-100 text-slate-400 border border-slate-200 cursor-default"
+                    >
+                      Your current plan
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleSelectTier('premium')}
+                      className="w-full py-2.5 rounded-full text-xs font-bold bg-[#0F172A] text-white hover:bg-[#1E293B] transition-all cursor-pointer shadow-xs"
+                    >
+                      Upgrade to Premium
+                    </button>
+                  )}
+                </div>
+
+                {/* Price */}
+                <div className="pt-2">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl sm:text-4xl font-extrabold text-[#0F172A]">
+                      GH₵ {price}
+                    </span>
+                    <span className="text-xs text-[#64748B] font-medium">/ month</span>
+                  </div>
+                  {billingInterval === 'annual' && (
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      Billed annually (GH₵ 1,920/yr)
+                    </p>
+                  )}
+                </div>
+
+                {/* Features List */}
+                <div className="pt-2 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#0F172A]">
+                    <span>Everything in Pro & Standard, plus:</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Globe className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Online member self-registration portal</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Smartphone className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Direct online renewals via MoMo</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Printer className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Members view & print receipts online</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Bell className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Instant SMS & email confirmations</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Sparkles className="w-4 h-4 text-purple-600 shrink-0" />
+                    <span>Custom domain gym integration</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 text-xs text-[#334155]">
+                    <Crown className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span>24/7 dedicated VIP concierge support</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer note */}
+              <div className="mt-8 pt-4 border-t border-slate-100 text-[11px] text-[#64748B]">
+                Complete hands-off digital management
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Footer Notes */}
+      <div className="text-center pt-4 border-t border-slate-100 text-xs text-[#64748B] space-y-1.5">
+        <p>
+          Need custom multi-branch licensing or dedicated enterprise deployment?{' '}
+          <span className="text-[#3B82F6] hover:text-[#2563EB] font-medium cursor-pointer">
+            Contact LiftDesk Support
+          </span>
+        </p>
+        <p className="text-[11px] text-[#94A3B8]">
+          All prices in Ghanaian Cedis (GH₵) &bull; Switch or upgrade your tier anytime &bull; Instant activation
+        </p>
       </div>
     </div>
   );

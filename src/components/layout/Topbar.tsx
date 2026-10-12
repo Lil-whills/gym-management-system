@@ -52,12 +52,6 @@ export const Topbar: React.FC<TopbarProps> = ({ onOpenSidebar }) => {
         subtitle: 'Track dues collections, inspect transactions, and print receipts',
       };
     }
-    if (path.startsWith('/settings')) {
-      return {
-        title: 'Gym Settings & Workspace',
-        subtitle: 'Manage facility contact info, operating hours, and prototype demo data',
-      };
-    }
     return {
       title: 'LiftDesk SaaS',
       subtitle: 'Gym Membership & Facility Management',
